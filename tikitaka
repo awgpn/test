@@ -1,0 +1,1253 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Teka-Teki Silang Forensik Digital</title>
+    <style>
+        :root {
+            --bg-dark: #0f172a;
+            --bg-card: #1e293b;
+            --bg-card-hover: #334155;
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --accent-cyan: #06b6d4;
+            --accent-blue: #3b82f6;
+            --accent-blue-light: rgba(59, 130, 246, 0.25);
+            --cell-bg: #0f172a;
+            --cell-border: #475569;
+            --cell-active: #1e3a8a;
+            --cell-word: #1e293b;
+            --cell-word-highlight: rgba(59, 130, 246, 0.35);
+            --correct-bg: #065f46;
+            --correct-border: #10b981;
+            --incorrect-bg: #991b1b;
+            --incorrect-border: #ef4444;
+            --hint-bg: #78350f;
+            --hint-border: #f59e0b;
+            --shadow-glow: 0 0 15px rgba(6, 182, 212, 0.3);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            user-select: none;
+            -webkit-user-select: none;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-dark);
+            color: var(--text-main);
+            height: 100vh;
+            width: 100vw;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            padding: 12px;
+        }
+
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: var(--bg-card);
+            padding: 10px 20px;
+            border-radius: 10px;
+            border: 1px solid #334155;
+            margin-bottom: 10px;
+            flex-shrink: 0;
+        }
+
+        .header-title h1 {
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: var(--accent-cyan);
+            letter-spacing: 0.5px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .header-title p {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            margin-top: 2px;
+        }
+
+        .stats-container {
+            display: flex;
+            gap: 16px;
+        }
+
+        .stat-badge {
+            background: rgba(15, 23, 42, 0.6);
+            border: 1px solid #334155;
+            padding: 6px 14px;
+            border-radius: 8px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-width: 90px;
+        }
+
+        .stat-badge .label {
+            font-size: 0.65rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .stat-badge .value {
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: var(--accent-cyan);
+        }
+
+        main {
+            display: grid;
+            grid-template-columns: 1fr 380px;
+            gap: 12px;
+            flex: 1;
+            min-height: 0;
+        }
+
+        .left-panel {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            min-height: 0;
+        }
+
+        .right-panel {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            min-height: 0;
+        }
+
+        .active-clue-banner {
+            background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+            border: 1px solid var(--accent-blue);
+            border-left: 5px solid var(--accent-cyan);
+            padding: 10px 14px;
+            border-radius: 8px;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            box-shadow: var(--shadow-glow);
+            flex-shrink: 0;
+        }
+
+        .active-clue-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .active-clue-num {
+            font-size: 0.75rem;
+            font-weight: 700;
+            background: var(--accent-blue);
+            color: #fff;
+            padding: 2px 8px;
+            border-radius: 4px;
+            text-transform: uppercase;
+        }
+
+        .active-clue-direction {
+            font-size: 0.75rem;
+            color: var(--accent-cyan);
+            font-weight: 600;
+        }
+
+        .active-clue-text {
+            font-size: 0.85rem;
+            color: var(--text-main);
+            line-height: 1.35;
+        }
+
+        .grid-container {
+            background: var(--bg-card);
+            border-radius: 10px;
+            border: 1px solid #334155;
+            padding: 12px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex: 1;
+            min-height: 0;
+            overflow: auto;
+        }
+
+        .crossword-grid {
+            display: grid;
+            grid-template-columns: repeat(13, min(38px, 3.8vw));
+            grid-template-rows: repeat(9, min(38px, 3.8vw));
+            gap: 4px;
+            background: #0f172a;
+            padding: 6px;
+            border-radius: 8px;
+            border: 2px solid #334155;
+        }
+
+        .grid-cell {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            aspect-ratio: 1;
+            background-color: transparent;
+            border-radius: 6px;
+        }
+
+        .grid-cell.active-slot {
+            background-color: var(--cell-bg);
+            border: 1.5px solid var(--cell-border);
+            cursor: pointer;
+            transition: all 0.15s ease;
+        }
+
+        .grid-cell.highlight-word {
+            background-color: var(--cell-word-highlight);
+            border-color: var(--accent-blue);
+        }
+
+        .grid-cell.highlight-focus {
+            background-color: var(--cell-active);
+            border: 2px solid var(--accent-cyan);
+            box-shadow: 0 0 10px rgba(6, 182, 212, 0.6);
+            z-index: 2;
+        }
+
+        .grid-cell.correct {
+            background-color: var(--correct-bg) !important;
+            border-color: var(--correct-border) !important;
+            color: #fff;
+        }
+
+        .grid-cell.incorrect {
+            background-color: var(--incorrect-bg) !important;
+            border-color: var(--incorrect-border) !important;
+            animation: shake 0.4s ease-in-out;
+        }
+
+        .grid-cell.hinted {
+            background-color: var(--hint-bg) !important;
+            border-color: var(--hint-border) !important;
+        }
+
+        .cell-number {
+            position: absolute;
+            top: 2px;
+            left: 3px;
+            font-size: 0.55rem;
+            font-weight: 700;
+            color: var(--accent-cyan);
+            pointer-events: none;
+            z-index: 3;
+        }
+
+        .cell-input {
+            width: 100%;
+            height: 100%;
+            background: transparent;
+            border: none;
+            outline: none;
+            text-align: center;
+            font-size: 1.1rem;
+            font-weight: 800;
+            color: var(--text-main);
+            text-transform: uppercase;
+            cursor: pointer;
+            padding-top: 4px;
+        }
+
+        .controls-card {
+            background: var(--bg-card);
+            border-radius: 10px;
+            border: 1px solid #334155;
+            padding: 10px 12px;
+            display: flex;
+            gap: 8px;
+            flex-shrink: 0;
+        }
+
+        .btn {
+            flex: 1;
+            padding: 10px 12px;
+            border: none;
+            border-radius: 8px;
+            font-size: 0.8rem;
+            font-weight: 700;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            transition: all 0.2s ease;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .btn:active {
+            transform: scale(0.97);
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--accent-blue) 0%, #2563eb 100%);
+            color: white;
+            box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
+        }
+
+        .btn-primary:hover {
+            background: linear-gradient(135deg, #60a5fa 0%, var(--accent-blue) 100%);
+        }
+
+        .btn-warning {
+            background: linear-gradient(135deg, #d97706 0%, #b45309 100%);
+            color: white;
+        }
+
+        .btn-warning:hover {
+            background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+        }
+
+        .btn-secondary {
+            background: #334155;
+            color: var(--text-main);
+        }
+
+        .btn-secondary:hover {
+            background: #475569;
+        }
+
+        .clues-container {
+            background: var(--bg-card);
+            border-radius: 10px;
+            border: 1px solid #334155;
+            padding: 10px;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            flex: 1;
+            min-height: 0;
+            overflow: hidden;
+        }
+
+        .clue-column {
+            display: flex;
+            flex-direction: column;
+            min-height: 0;
+        }
+
+        .clue-column h2 {
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: var(--accent-cyan);
+            padding-bottom: 6px;
+            border-bottom: 1px solid #334155;
+            margin-bottom: 6px;
+            flex-shrink: 0;
+        }
+
+        .clue-list {
+            list-style: none;
+            overflow-y: auto;
+            flex: 1;
+            padding-right: 4px;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .clue-list::-webkit-scrollbar {
+            width: 4px;
+        }
+
+        .clue-list::-webkit-scrollbar-thumb {
+            background: #475569;
+            border-radius: 4px;
+        }
+
+        .clue-item {
+            font-size: 0.72rem;
+            color: var(--text-muted);
+            padding: 6px 8px;
+            border-radius: 6px;
+            background: rgba(15, 23, 42, 0.4);
+            border: 1px solid transparent;
+            cursor: pointer;
+            line-height: 1.3;
+            transition: all 0.15s ease;
+        }
+
+        .clue-item:hover {
+            background: rgba(51, 65, 85, 0.6);
+            color: var(--text-main);
+        }
+
+        .clue-item.active {
+            background: var(--cell-word-highlight);
+            border-color: var(--accent-blue);
+            color: var(--text-main);
+            font-weight: 600;
+        }
+
+        .clue-item.solved {
+            text-decoration: line-through;
+            opacity: 0.5;
+            background: rgba(16, 185, 129, 0.1);
+            border-color: rgba(16, 185, 129, 0.3);
+        }
+
+        .clue-number-tag {
+            font-weight: 700;
+            color: var(--accent-cyan);
+            margin-right: 4px;
+        }
+
+        .virtual-keyboard {
+            background: var(--bg-card);
+            border-radius: 10px;
+            border: 1px solid #334155;
+            padding: 8px;
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+            flex-shrink: 0;
+        }
+
+        .keyboard-row {
+            display: flex;
+            justify-content: center;
+            gap: 4px;
+        }
+
+        .key-btn {
+            background: #334155;
+            color: var(--text-main);
+            border: none;
+            border-radius: 6px;
+            min-width: 28px;
+            height: 34px;
+            flex: 1;
+            max-width: 38px;
+            font-size: 0.85rem;
+            font-weight: 700;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background 0.1s ease;
+        }
+
+        .key-btn:active {
+            background: var(--accent-blue);
+            transform: translateY(1px);
+        }
+
+        .key-btn.wide {
+            max-width: 58px;
+            font-size: 0.75rem;
+            background: #475569;
+        }
+
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: rgba(15, 23, 42, 0.85);
+            backdrop-filter: blur(8px);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 100;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s ease;
+        }
+
+        .modal-overlay.show {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .modal-card {
+            background: var(--bg-card);
+            border: 2px solid var(--accent-cyan);
+            border-radius: 16px;
+            padding: 28px;
+            width: 90%;
+            max-width: 450px;
+            text-align: center;
+            box-shadow: 0 0 30px rgba(6, 182, 212, 0.4);
+            transform: scale(0.8);
+            transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        .modal-overlay.show .modal-card {
+            transform: scale(1);
+        }
+
+        .modal-icon {
+            font-size: 3rem;
+            margin-bottom: 10px;
+        }
+
+        .modal-card h2 {
+            font-size: 1.5rem;
+            color: var(--accent-cyan);
+            margin-bottom: 6px;
+        }
+
+        .modal-card p {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            margin-bottom: 20px;
+        }
+
+        .modal-stats {
+            background: #0f172a;
+            border-radius: 10px;
+            padding: 14px;
+            margin-bottom: 20px;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            border: 1px solid #334155;
+        }
+
+        .modal-stat-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .modal-stat-item .val {
+            font-size: 1.3rem;
+            font-weight: 800;
+            color: var(--accent-blue);
+        }
+
+        .modal-stat-item .lbl {
+            font-size: 0.65rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+        }
+
+        .confetti-piece {
+            position: fixed;
+            width: 8px;
+            height: 12px;
+            top: -20px;
+            z-index: 101;
+            pointer-events: none;
+            animation: fall 3s linear forwards;
+        }
+
+        @keyframes fall {
+            0% {
+                transform: translateY(0) rotate(0deg);
+                opacity: 1;
+            }
+            100% {
+                transform: translateY(105vh) rotate(720deg);
+                opacity: 0;
+            }
+        }
+
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            20%, 60% { transform: translateX(-4px); }
+            40%, 80% { transform: translateX(4px); }
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <div class="header-title">
+            <h1>&#x1F50D; FORENSIK DIGITAL: MEMORI & JARINGAN</h1>
+            <p>Teka-Teki Silang Edukatif Berbasis Analisis HOTS Perguruan Tinggi</p>
+        </div>
+        <div class="stats-container">
+            <div class="stat-badge">
+                <span class="label">SKOR AKHIR</span>
+                <span class="value" id="score-display">100</span>
+            </div>
+            <div class="stat-badge">
+                <span class="label">BANTUAN</span>
+                <span class="value" id="hints-display">0</span>
+            </div>
+            <div class="stat-badge">
+                <span class="label">PROGRES</span>
+                <span class="value" id="progress-display">0/11</span>
+            </div>
+        </div>
+    </header>
+
+    <main>
+        <section class="left-panel">
+            <div class="active-clue-banner" id="active-clue-banner">
+                <div class="active-clue-header">
+                    <span class="active-clue-num" id="active-clue-num">SOAL #1</span>
+                    <span class="active-clue-direction" id="active-clue-direction">MENURUN</span>
+                </div>
+                <div class="active-clue-text" id="active-clue-text">
+                    Pilih salah satu kotak teka-teki silang untuk memulai menjawab.
+                </div>
+            </div>
+
+            <div class="grid-container">
+                <div class="crossword-grid" id="grid">
+                    <!-- Dynamic grid cells generated via JS -->
+                </div>
+            </div>
+        </section>
+
+        <section class="right-panel">
+            <div class="controls-card">
+                <button class="btn btn-primary" id="btn-check">&#x2714; Periksa</button>
+                <button class="btn btn-warning" id="btn-hint">&#x1F4A1; Bantuan</button>
+                <button class="btn btn-secondary" id="btn-reset">&#x21BB; Ulang</button>
+            </div>
+
+            <div class="clues-container">
+                <div class="clue-column">
+                    <h2>Mendatar</h2>
+                    <ul class="clue-list" id="across-clues">
+                        <!-- Dynamic clues generated via JS -->
+                    </ul>
+                </div>
+                <div class="clue-column">
+                    <h2>Menurun</h2>
+                    <ul class="clue-list" id="down-clues">
+                        <!-- Dynamic clues generated via JS -->
+                    </ul>
+                </div>
+            </div>
+
+            <div class="virtual-keyboard">
+                <div class="keyboard-row">
+                    <button class="key-btn" data-key="Q">Q</button>
+                    <button class="key-btn" data-key="W">W</button>
+                    <button class="key-btn" data-key="E">E</button>
+                    <button class="key-btn" data-key="R">R</button>
+                    <button class="key-btn" data-key="T">T</button>
+                    <button class="key-btn" data-key="Y">Y</button>
+                    <button class="key-btn" data-key="U">U</button>
+                    <button class="key-btn" data-key="I">I</button>
+                    <button class="key-btn" data-key="O">O</button>
+                    <button class="key-btn" data-key="P">P</button>
+                </div>
+                <div class="keyboard-row">
+                    <button class="key-btn" data-key="A">A</button>
+                    <button class="key-btn" data-key="S">S</button>
+                    <button class="key-btn" data-key="D">D</button>
+                    <button class="key-btn" data-key="F">F</button>
+                    <button class="key-btn" data-key="G">G</button>
+                    <button class="key-btn" data-key="H">H</button>
+                    <button class="key-btn" data-key="J">J</button>
+                    <button class="key-btn" data-key="K">K</button>
+                    <button class="key-btn" data-key="L">L</button>
+                </div>
+                <div class="keyboard-row">
+                    <button class="key-btn" data-key="Z">Z</button>
+                    <button class="key-btn" data-key="X">X</button>
+                    <button class="key-btn" data-key="C">C</button>
+                    <button class="key-btn" data-key="V">V</button>
+                    <button class="key-btn" data-key="B">B</button>
+                    <button class="key-btn" data-key="N">N</button>
+                    <button class="key-btn" data-key="M">M</button>
+                    <button class="key-btn wide" data-key="BACKSPACE">&#x232B;</button>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <div class="modal-overlay" id="victory-modal">
+        <div class="modal-card">
+            <div class="modal-icon">&#x1F3C6;</div>
+            <h2>ANALISIS SELESAI!</h2>
+            <p>Selamat! Anda telah berhasil menganalisis seluruh artefak forensik digital dengan tepat.</p>
+            <div class="modal-stats">
+                <div class="modal-stat-item">
+                    <span class="val" id="final-score">100</span>
+                    <span class="lbl">Skor Akhir</span>
+                </div>
+                <div class="modal-stat-item">
+                    <span class="val" id="final-hints">0</span>
+                    <span class="lbl">Bantuan Digunakan</span>
+                </div>
+            </div>
+            <button class="btn btn-primary" style="width: 100%;" id="btn-restart-modal">Main Lagi</button>
+        </div>
+    </div>
+
+    <script>
+        // Matrix dimensions: 9 rows x 13 cols (0-indexed)
+        const GRID_ROWS = 9;
+        const GRID_COLS = 13;
+
+        // Structured dataset for Digital Forensics clues and grid coordinates
+        const WORDS_DATA = [
+            {
+                id: 1,
+                number: 1,
+                word: "PORT",
+                direction: "down",
+                row: 0,
+                col: 2,
+                clue: "Analisis log PCAP menunjukkan serangan SQL injection menuju port numerik 8080. Istilah untuk titik akhir numerik komunikasi pada layer transport ini adalah..."
+            },
+            {
+                id: 2,
+                number: 2,
+                word: "WIRESHARK",
+                direction: "down",
+                row: 0,
+                col: 8,
+                clue: "Analis membutuhkan perkakas penganalisis prapaket open-source untuk merekonstruksi aliran sesi HTTP dan membedah paket data. Tool penganalisis protokol tersebut adalah..."
+            },
+            {
+                id: 3,
+                number: 3,
+                word: "VOLATILITY",
+                direction: "across",
+                row: 1,
+                col: 1,
+                clue: "Saat menginvestigasi malware tersembunyi yang melakukan process hollowing pada RAM, analis mengeksekusi plugin 'pslist' dan 'malfind'. Framework CLI analisis memori utama ini dinamakan..."
+            },
+            {
+                id: 4,
+                number: 4,
+                word: "ARTIFACT",
+                direction: "down",
+                row: 1,
+                col: 4,
+                clue: "Sisa data atau jejak digital aktivitas pengguna dalam memori volatil—seperti struktur EPROCESS atau kunci enkripsi—yang menjadi bukti vital dinamakan..."
+            },
+            {
+                id: 5,
+                number: 5,
+                word: "TCP",
+                direction: "down",
+                row: 1,
+                col: 5,
+                clue: "Pelacakan serangan SYN Flood mengeksploitasi 3-way handshake milik protokol layer transport berorientasi koneksi (connection-oriented) ini, yaitu..."
+            },
+            {
+                id: 6,
+                number: 6,
+                word: "RAM",
+                direction: "down",
+                row: 2,
+                col: 9,
+                clue: "Media penyimpanan utama tempat tersimpannya bukti volatil paling kritis (seperti plaintext password) yang akan hilang jika komputer dimatikan adalah..."
+            },
+            {
+                id: 7,
+                number: 7,
+                word: "HEADER",
+                direction: "across",
+                row: 3,
+                col: 7,
+                clue: "Untuk membuktikan manipulasi spoofing IP dan analisis port sumber/tujuan, analis forensik memeriksa bagian pembungkus data prapaket yang berisi metadata ini, yaitu..."
+            },
+            {
+                id: 8,
+                number: 8,
+                word: "DUMP",
+                direction: "down",
+                row: 3,
+                col: 10,
+                clue: "Proses akuisisi mentah bit-demi-bit seluruh isi memori fisik dari sistem terinfeksi ke dalam file citra (.raw/.dmp) sebelum daya dimatikan disebut memory..."
+            },
+            {
+                id: 9,
+                number: 9,
+                word: "UDP",
+                direction: "down",
+                row: 4,
+                col: 5,
+                clue: "Serangan DNS Amplification memanfaatkan sifat connectionless tanpa mekanisme handshaking dari protokol transport ini, yaitu..."
+            },
+            {
+                id: 10,
+                number: 10,
+                word: "HEAP",
+                direction: "across",
+                row: 6,
+                col: 2,
+                clue: "Dalam analisis memori volatil, lokasi alokasi memori dinamis tempat ditemukannya fragmentasi string sensitif hasil dekripsi aplikasi pengguna dinamakan..."
+            },
+            {
+                id: 11,
+                number: 11,
+                word: "PCAP",
+                direction: "across",
+                row: 7,
+                col: 3,
+                clue: "Ekstensi file dan format standar penangkapan trafik data jaringan (packet capture) yang dapat dibuka pada Wireshark atau TShark adalah..."
+            }
+        ];
+
+        let gridState = Array(GRID_ROWS).fill(null).map(() => Array(GRID_COLS).fill(null));
+        let activeWord = WORDS_DATA[0];
+        let activeCellPos = { r: WORDS_DATA[0].row, c: WORDS_DATA[0].col };
+        let currentScore = 100;
+        let hintsUsedCount = 0;
+        let solvedWordIds = new Set();
+
+        function initGridData() {
+            // Populate grid state matrix
+            WORDS_DATA.forEach(wordObj => {
+                const len = wordObj.word.length;
+                for (let i = 0; i < len; i++) {
+                    const r = wordObj.direction === "across" ? wordObj.row : wordObj.row + i;
+                    const c = wordObj.direction === "across" ? wordObj.col + i : wordObj.col;
+
+                    if (!gridState[r][c]) {
+                        gridState[r][c] = {
+                            correctChar: wordObj.word[i],
+                            userChar: "",
+                            isStart: (i === 0),
+                            startNum: (i === 0) ? wordObj.number : null,
+                            words: [],
+                            hinted: false
+                        };
+                    } else if (i === 0) {
+                        gridState[r][c].isStart = true;
+                        gridState[r][c].startNum = wordObj.number;
+                    }
+                    gridState[r][c].words.push(wordObj);
+                }
+            });
+        }
+
+        function renderGridDOM() {
+            const gridEl = document.getElementById("grid");
+            gridEl.innerHTML = "";
+
+            for (let r = 0; r < GRID_ROWS; r++) {
+                for (let c = 0; c < GRID_COLS; c++) {
+                    const cellData = gridState[r][c];
+                    const cellEl = document.createElement("div");
+                    cellEl.className = "grid-cell";
+                    cellEl.dataset.row = r;
+                    cellEl.dataset.col = c;
+
+                    if (cellData) {
+                        cellEl.classList.add("active-slot");
+
+                        if (cellData.isStart) {
+                            const numEl = document.createElement("span");
+                            numEl.className = "cell-number";
+                            numEl.textContent = cellData.startNum;
+                            cellEl.appendChild(numEl);
+                        }
+
+                        const inputEl = document.createElement("input");
+                        inputEl.type = "text";
+                        inputEl.className = "cell-input";
+                        inputEl.maxLength = 1;
+                        inputEl.value = cellData.userChar;
+                        inputEl.setAttribute("autocomplete", "off");
+                        inputEl.setAttribute("autocorrect", "off");
+                        inputEl.setAttribute("spellcheck", "false");
+
+                        // Touch and click event handling
+                        cellEl.addEventListener("click", () => handleCellClick(r, c));
+
+                        inputEl.addEventListener("input", (e) => handleInput(e, r, c));
+                        inputEl.addEventListener("keydown", (e) => handleKeyDown(e, r, c));
+
+                        cellEl.appendChild(inputEl);
+                    }
+
+                    gridEl.appendChild(cellEl);
+                }
+            }
+        }
+
+        function renderCluesDOM() {
+            const acrossEl = document.getElementById("across-clues");
+            const downEl = document.getElementById("down-clues");
+
+            acrossEl.innerHTML = "";
+            downEl.innerHTML = "";
+
+            WORDS_DATA.forEach(wordObj => {
+                const li = document.createElement("li");
+                li.className = "clue-item";
+                li.id = `clue-item-${wordObj.id}`;
+                li.innerHTML = `<span class="clue-number-tag">${wordObj.number}.</span> ${wordObj.clue}`;
+
+                li.addEventListener("click", () => {
+                    selectWord(wordObj);
+                    focusCell(wordObj.row, wordObj.col);
+                });
+
+                if (wordObj.direction === "across") {
+                    acrossEl.appendChild(li);
+                } else {
+                    downEl.appendChild(li);
+                }
+            });
+        }
+
+        function handleCellClick(r, c) {
+            const cellData = gridState[r][c];
+            if (!cellData) return;
+
+            // If clicking the same active cell that intersects two words, toggle direction
+            if (activeCellPos.r === r && activeCellPos.c === c && cellData.words.length > 1) {
+                const otherWord = cellData.words.find(w => w.id !== activeWord.id);
+                if (otherWord) {
+                    selectWord(otherWord);
+                }
+            } else {
+                // Pick word matching direction or first word
+                const matchingWord = cellData.words.find(w => w.direction === activeWord.direction) || cellData.words[0];
+                selectWord(matchingWord);
+            }
+
+            activeCellPos = { r, c };
+            updateHighlighting();
+        }
+
+        function selectWord(wordObj) {
+            activeWord = wordObj;
+            updateActiveClueBanner();
+            updateHighlighting();
+        }
+
+        function updateHighlighting() {
+            // Clear prior highlights
+            document.querySelectorAll(".grid-cell").forEach(cell => {
+                cell.classList.remove("highlight-word", "highlight-focus");
+            });
+
+            document.querySelectorAll(".clue-item").forEach(item => {
+                item.classList.remove("active");
+            });
+
+            // Highlight word cells
+            const len = activeWord.word.length;
+            for (let i = 0; i < len; i++) {
+                const r = activeWord.direction === "across" ? activeWord.row : activeWord.row + i;
+                const c = activeWord.direction === "across" ? activeWord.col + i : activeWord.col;
+                const cellEl = document.querySelector(`.grid-cell[data-row="${r}"][data-col="${c}"]`);
+                if (cellEl) cellEl.classList.add("highlight-word");
+            }
+
+            // Highlight single focused cell
+            const focusEl = document.querySelector(`.grid-cell[data-row="${activeCellPos.r}"][data-col="${activeCellPos.c}"]`);
+            if (focusEl) {
+                focusEl.classList.add("highlight-focus");
+            }
+
+            // Highlight active clue item
+            const clueEl = document.getElementById(`clue-item-${activeWord.id}`);
+            if (clueEl) {
+                clueEl.classList.add("active");
+                clueEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            }
+        }
+
+        function updateActiveClueBanner() {
+            document.getElementById("active-clue-num").textContent = `SOAL #${activeWord.number}`;
+            document.getElementById("active-clue-direction").textContent = activeWord.direction === "across" ? "MENDATAR" : "MENURUN";
+            document.getElementById("active-clue-text").textContent = activeWord.clue;
+        }
+
+        function focusCell(r, c) {
+            activeCellPos = { r, c };
+            const cellEl = document.querySelector(`.grid-cell[data-row="${r}"][data-col="${c}"] .cell-input`);
+            if (cellEl) {
+                cellEl.focus();
+                cellEl.select();
+            }
+            updateHighlighting();
+        }
+
+        function handleInput(e, r, c) {
+            const inputVal = e.target.value.toUpperCase().replace(/[^A-Z]/g, "");
+            e.target.value = inputVal;
+            gridState[r][c].userChar = inputVal;
+
+            // Remove incorrect visual status upon modification
+            const parentCell = e.target.closest(".grid-cell");
+            parentCell.classList.remove("incorrect");
+
+            if (inputVal.length > 0) {
+                moveToNextCell(r, c);
+            }
+        }
+
+        function moveToNextCell(r, c) {
+            const len = activeWord.word.length;
+            let currentIdx = -1;
+
+            for (let i = 0; i < len; i++) {
+                const checkR = activeWord.direction === "across" ? activeWord.row : activeWord.row + i;
+                const checkC = activeWord.direction === "across" ? activeWord.col + i : activeWord.col;
+                if (checkR === r && checkC === c) {
+                    currentIdx = i;
+                    break;
+                }
+            }
+
+            if (currentIdx !== -1 && currentIdx < len - 1) {
+                const nextR = activeWord.direction === "across" ? activeWord.row : activeWord.row + currentIdx + 1;
+                const nextC = activeWord.direction === "across" ? activeWord.col + currentIdx + 1 : activeWord.col;
+                focusCell(nextR, nextC);
+            }
+        }
+
+        function moveToPrevCell(r, c) {
+            const len = activeWord.word.length;
+            let currentIdx = -1;
+
+            for (let i = 0; i < len; i++) {
+                const checkR = activeWord.direction === "across" ? activeWord.row : activeWord.row + i;
+                const checkC = activeWord.direction === "across" ? activeWord.col + i : activeWord.col;
+                if (checkR === r && checkC === c) {
+                    currentIdx = i;
+                    break;
+                }
+            }
+
+            if (currentIdx > 0) {
+                const prevR = activeWord.direction === "across" ? activeWord.row : activeWord.row + currentIdx - 1;
+                const prevC = activeWord.direction === "across" ? activeWord.col + currentIdx - 1 : activeWord.col;
+                focusCell(prevR, prevC);
+            }
+        }
+
+        function handleKeyDown(e, r, c) {
+            if (e.key === "Backspace") {
+                if (gridState[r][c].userChar === "") {
+                    moveToPrevCell(r, c);
+                } else {
+                    gridState[r][c].userChar = "";
+                    e.target.value = "";
+                }
+            } else if (e.key === "ArrowRight") {
+                if (c < GRID_COLS - 1 && gridState[r][c + 1]) focusCell(r, c + 1);
+            } else if (e.key === "ArrowLeft") {
+                if (c > 0 && gridState[r][c - 1]) focusCell(r, c - 1);
+            } else if (e.key === "ArrowDown") {
+                if (r < GRID_ROWS - 1 && gridState[r + 1][c]) focusCell(r + 1, c);
+            } else if (e.key === "ArrowUp") {
+                if (r > 0 && gridState[r - 1][c]) focusCell(r - 1, c);
+            }
+        }
+
+        function initVirtualKeyboard() {
+            document.querySelectorAll(".key-btn").forEach(btn => {
+                btn.addEventListener("click", () => {
+                    const key = btn.dataset.key;
+                    const { r, c } = activeCellPos;
+                    const cellData = gridState[r][c];
+
+                    if (!cellData) return;
+
+                    const inputEl = document.querySelector(`.grid-cell[data-row="${r}"][data-col="${c}"] .cell-input`);
+
+                    if (key === "BACKSPACE") {
+                        if (cellData.userChar === "") {
+                            moveToPrevCell(r, c);
+                        } else {
+                            cellData.userChar = "";
+                            if (inputEl) inputEl.value = "";
+                        }
+                    } else {
+                        cellData.userChar = key;
+                        if (inputEl) inputEl.value = key;
+                        moveToNextCell(r, c);
+                    }
+                });
+            });
+        }
+
+        function checkAnswers() {
+            let newlySolvedCount = 0;
+            let totalCorrectWords = 0;
+
+            WORDS_DATA.forEach(wordObj => {
+                const len = wordObj.word.length;
+                let isWordCorrect = true;
+
+                for (let i = 0; i < len; i++) {
+                    const r = wordObj.direction === "across" ? wordObj.row : wordObj.row + i;
+                    const c = wordObj.direction === "across" ? wordObj.col + i : wordObj.col;
+                    const cellData = gridState[r][c];
+
+                    if (cellData.userChar !== cellData.correctChar) {
+                        isWordCorrect = false;
+                        break;
+                    }
+                }
+
+                if (isWordCorrect) {
+                    totalCorrectWords++;
+                    solvedWordIds.add(wordObj.id);
+                    document.getElementById(`clue-item-${wordObj.id}`).classList.add("solved");
+
+                    // Highlight cells green
+                    for (let i = 0; i < len; i++) {
+                        const r = wordObj.direction === "across" ? wordObj.row : wordObj.row + i;
+                        const c = wordObj.direction === "across" ? wordObj.col + i : wordObj.col;
+                        const cellEl = document.querySelector(`.grid-cell[data-row="${r}"][data-col="${c}"]`);
+                        if (cellEl) cellEl.classList.add("correct");
+                    }
+                } else {
+                    // Highlight incorrect cells red with shake animation, then clear
+                    for (let i = 0; i < len; i++) {
+                        const r = wordObj.direction === "across" ? wordObj.row : wordObj.row + i;
+                        const c = wordObj.direction === "across" ? wordObj.col + i : wordObj.col;
+                        const cellData = gridState[r][c];
+
+                        if (cellData.userChar !== "" && cellData.userChar !== cellData.correctChar) {
+                            const cellEl = document.querySelector(`.grid-cell[data-row="${r}"][data-col="${c}"]`);
+                            if (cellEl && !cellEl.classList.contains("correct")) {
+                                cellEl.classList.add("incorrect");
+                                setTimeout(() => {
+                                    cellEl.classList.remove("incorrect");
+                                    cellData.userChar = "";
+                                    const inputEl = cellEl.querySelector(".cell-input");
+                                    if (inputEl) inputEl.value = "";
+                                }, 700);
+                            }
+                        }
+                    }
+                }
+            });
+
+            // Deduct points for uncompleted check
+            if (totalCorrectWords < WORDS_DATA.length) {
+                currentScore = Math.max(0, currentScore - 5);
+                updateScoreDisplay();
+            }
+
+            document.getElementById("progress-display").textContent = `${totalCorrectWords}/${WORDS_DATA.length}`;
+
+            if (totalCorrectWords === WORDS_DATA.length) {
+                triggerVictory();
+            }
+        }
+
+        function revealHint() {
+            const len = activeWord.word.length;
+            const unrevealed = [];
+
+            for (let i = 0; i < len; i++) {
+                const r = activeWord.direction === "across" ? activeWord.row : activeWord.row + i;
+                const c = activeWord.direction === "across" ? activeWord.col + i : activeWord.col;
+                const cellData = gridState[r][c];
+
+                if (cellData.userChar !== cellData.correctChar && !cellData.hinted) {
+                    unrevealed.push({ r, c, char: cellData.correctChar });
+                }
+            }
+
+            if (unrevealed.length > 0) {
+                const randomTarget = unrevealed[Math.floor(Math.random() * unrevealed.length)];
+                const { r, c, char } = randomTarget;
+
+                gridState[r][c].userChar = char;
+                gridState[r][c].hinted = true;
+
+                const cellEl = document.querySelector(`.grid-cell[data-row="${r}"][data-col="${c}"]`);
+                if (cellEl) {
+                    cellEl.classList.add("hinted");
+                    const inputEl = cellEl.querySelector(".cell-input");
+                    if (inputEl) inputEl.value = char;
+                }
+
+                hintsUsedCount++;
+                currentScore = Math.max(0, currentScore - 10);
+
+                document.getElementById("hints-display").textContent = hintsUsedCount;
+                updateScoreDisplay();
+            }
+        }
+
+        function updateScoreDisplay() {
+            document.getElementById("score-display").textContent = currentScore;
+        }
+
+        function resetGame() {
+            currentScore = 100;
+            hintsUsedCount = 0;
+            solvedWordIds.clear();
+
+            document.getElementById("score-display").textContent = currentScore;
+            document.getElementById("hints-display").textContent = hintsUsedCount;
+            document.getElementById("progress-display").textContent = `0/${WORDS_DATA.length}`;
+
+            for (let r = 0; r < GRID_ROWS; r++) {
+                for (let c = 0; c < GRID_COLS; c++) {
+                    if (gridState[r][c]) {
+                        gridState[r][c].userChar = "";
+                        gridState[r][c].hinted = false;
+                    }
+                }
+            }
+
+            renderGridDOM();
+            renderCluesDOM();
+            selectWord(WORDS_DATA[0]);
+            focusCell(WORDS_DATA[0].row, WORDS_DATA[0].col);
+        }
+
+        function triggerVictory() {
+            document.getElementById("final-score").textContent = currentScore;
+            document.getElementById("final-hints").textContent = hintsUsedCount;
+
+            const modal = document.getElementById("victory-modal");
+            modal.classList.add("show");
+
+            createConfetti();
+        }
+
+        function createConfetti() {
+            const colors = ["#06b6d4", "#3b82f6", "#10b981", "#f59e0b", "#ec4899"];
+            for (let i = 0; i < 70; i++) {
+                const confetti = document.createElement("div");
+                confetti.className = "confetti-piece";
+                confetti.style.left = Math.random() * 100 + "vw";
+                confetti.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+                confetti.style.animationDuration = (Math.random() * 2 + 2) + "s";
+                confetti.style.animationDelay = (Math.random() * 1.5) + "s";
+                document.body.appendChild(confetti);
+
+                setTimeout(() => confetti.remove(), 4500);
+            }
+        }
+
+        document.getElementById("btn-check").addEventListener("click", checkAnswers);
+        document.getElementById("btn-hint").addEventListener("click", revealHint);
+        document.getElementById("btn-reset").addEventListener("click", resetGame);
+        document.getElementById("btn-restart-modal").addEventListener("click", () => {
+            document.getElementById("victory-modal").classList.remove("show");
+            resetGame();
+        });
+
+        // Initialize game engine on load
+        window.onload = () => {
+            initGridData();
+            renderGridDOM();
+            renderCluesDOM();
+            initVirtualKeyboard();
+            selectWord(WORDS_DATA[0]);
+            focusCell(WORDS_DATA[0].row, WORDS_DATA[0].col);
+        };
+    </script>
+</body>
+</html>
